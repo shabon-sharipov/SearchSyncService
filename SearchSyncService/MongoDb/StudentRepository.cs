@@ -17,8 +17,18 @@ public class StudentRepository
     public async Task<Student> GetByGuidId(BaseModel changeEvent)
     {
         var collection = _efContext.MongoDatabase().GetCollection<Student>(changeEvent.Type);
-        var filter = Builders<Student>.Filter.Eq(x => x.GuidId, changeEvent.GuidId);
+        var filter = Builders<Student>.Filter.Eq(x => x.Id, changeEvent.Id);
+
+        try
+        {
         var result = await collection.Find(filter).FirstOrDefaultAsync();
+
         return result;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
     }
 }

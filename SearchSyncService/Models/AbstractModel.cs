@@ -7,7 +7,7 @@ public  class AbstractModel
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; }
-    [BsonElement("GuidId")]
+    [BsonElement("Id")]
     public string GuidId { get; set; }
     [BsonElement("FirstName")]
     public string FirstName { get; set; }
