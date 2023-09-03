@@ -1,5 +1,5 @@
-using SearchSyncService.Consumers;
-using SearchSyncService.Services;
+using SearchSyncService.ElasticSearchRepository;
+using SearchSyncService.MongoDb;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +9,12 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddScoped<StudentSync, StudentSync>();
+builder.Services.AddOptions<ElasticSearchOptions>("ElasticSearch");
+builder.Services.AddSingleton<IStudentEventEsSyncConsumer, StudentEventEsSyncConsumer>();
+builder.Services.AddSingleton<IStudentSyncService, StudentSyncService>();
+builder.Services.AddSingleton<IStudentRepository, StudentRepository>();
+builder.Services.AddSingleton<IStudentRepositoryEs, StudentRepositoryEs>();
+
 var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -19,10 +24,10 @@ if (app.Environment.IsDevelopment())
 }
 
 // Create an instance of the StudentEventEsSyncConsumer class
-var studentEventEsSyncConsumer = new StudentEventEsSyncConsumer(new StudentSync());
-
+var studentEventEsSyncConsumer = app.Services.GetRequiredService<IStudentEventEsSyncConsumer>();
 // Call the Consume method to start consuming events
 await studentEventEsSyncConsumer.Consume();
+
 app.UseHttpsRedirection();
 
 app.UseAuthorization();

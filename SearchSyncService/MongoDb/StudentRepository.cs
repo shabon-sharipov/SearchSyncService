@@ -1,17 +1,11 @@
-using System.Text.Json;
-using MongoDB.Driver;
-using SearchSyncService.Consumers.Models;
-using SearchSyncService.Models;
-using SearchSyncService.MongoDb.DataBase;
-
 namespace SearchSyncService.MongoDb;
 
-public class StudentRepository
+public class StudentRepository : IStudentRepository
 {
-    private EFContext _efContext;
-    public StudentRepository()
+    private DatabaseContext _efContext;
+    public StudentRepository(IConfiguration configuration)
     {
-        _efContext = new EFContext();
+        _efContext = new DatabaseContext(configuration);
     }
 
     public async Task<Student> GetByGuidId(BaseModel changeEvent)
@@ -21,9 +15,9 @@ public class StudentRepository
 
         try
         {
-        var result = await collection.Find(filter).FirstOrDefaultAsync();
+            var result = await collection.Find(filter).FirstOrDefaultAsync();
 
-        return result;
+            return result;
         }
         catch (Exception e)
         {

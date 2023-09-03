@@ -1,30 +1,28 @@
-using SearchSyncService.Services;
-using System.Runtime.Loader;
 using System.Text;
-using System.Text.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using SearchSyncService.Consumers.Models;
 
 namespace SearchSyncService.Consumers;
 
-public class StudentEventEsSyncConsumer
+public class StudentEventEsSyncConsumer : IStudentEventEsSyncConsumer
 {
-    private readonly StudentSync _studentSync;
-    
-    public StudentEventEsSyncConsumer(StudentSync studentSync)
+    private readonly IStudentSyncService _studentSync;
+    private readonly RabbitMQOptions _options;
+
+    public StudentEventEsSyncConsumer(IStudentSyncService studentSync, IConfiguration configuration)
     {
         _studentSync = studentSync;
+        _options = configuration.GetSection("RabbitMQ")?.Get<RabbitMQOptions>() ?? throw new ArgumentNullException("ElasticSearchOptions");
     }
 
     public async Task Consume()
     {
         var factory = new ConnectionFactory
         {
-            Uri = new Uri("amqp://guest:guest@localhost:5672"),
-            ClientProvidedName = "RabbitMQ Consumer"
+            Uri = new Uri(_options.Url),
+            ClientProvidedName = _options.ClientProvidedName
         };
-
+        await Console.Out.WriteLineAsync(_options.Url);
         using (var connection = factory.CreateConnection())
         using (var channel = connection.CreateModel())
         {
@@ -37,7 +35,7 @@ public class StudentEventEsSyncConsumer
             channel.QueueBind(queueName, exchangeName, routingKey, arguments: null);
 
             var consumer = new EventingBasicConsumer(channel);
-            consumer.Received += (sender, args) =>
+            consumer.Received += async (sender, args) =>
             {
                 var body = args.Body.ToArray();
                 var message = Encoding.UTF8.GetString(body);
@@ -45,7 +43,7 @@ public class StudentEventEsSyncConsumer
                 var changeEvent = JsonSerializer.Deserialize<BaseModel>(message);
                 // Process the message here
                 // ...
-                _studentSync.ProcessChangeEventAsync(changeEvent);
+                await _studentSync.ProcessChangeEventAsync(changeEvent);
                 channel.BasicAck(args.DeliveryTag, multiple: false);
             };
 
@@ -54,6 +52,8 @@ public class StudentEventEsSyncConsumer
             Console.WriteLine("Press any key to exit.");
             Console.ReadKey();
         }
+
+        await Task.CompletedTask;
     }
-    
+
 }

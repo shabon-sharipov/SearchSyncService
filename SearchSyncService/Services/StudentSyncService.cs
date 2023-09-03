@@ -1,17 +1,17 @@
-using SearchSyncService.Consumers.Models;
 using SearchSyncService.ElasticSearchRepository;
 using SearchSyncService.MongoDb;
 
 namespace SearchSyncService.Services;
-public class StudentSync
-{
-    private StudentRepository _studentRepository;
-    private StudentRepositoryEs _studentRepositoryEs;
 
-    public StudentSync()
+public class StudentSyncService : IStudentSyncService
+{
+    private IStudentRepository _studentRepository;
+    private IStudentRepositoryEs _studentRepositoryEs;
+
+    public StudentSyncService(IStudentRepositoryEs studentRepositoryEs, IStudentRepository studentRepository)
     {
-        _studentRepository = new StudentRepository();
-        _studentRepositoryEs = new StudentRepositoryEs();
+        _studentRepository = studentRepository;
+        _studentRepositoryEs = studentRepositoryEs;
     }
 
     public async Task ProcessChangeEventAsync(BaseModel changeEvent)
@@ -31,7 +31,7 @@ public class StudentSync
                 throw new ArgumentOutOfRangeException();
         }
     }
-    
+
     private async Task HandleInsertAsync(BaseModel changeEvent)
     {
         var result = await _studentRepository.GetByGuidId(changeEvent);

@@ -1,38 +1,33 @@
 using Nest;
-using SearchSyncService.Constants;
-using SearchSyncService.Models;
-using SearchSyncService.Services.Interfaces;
 
 namespace SearchSyncService.ElasticSearchRepository;
 
 public class StudentRepositoryEs : IStudentRepositoryEs
 {
-    private IStudentRepositoryEs _studentRepositoryEsImplementation;
+    private ConnectionSettings _elasticClientSettings;
+    private readonly ElasticSearchOptions _options;
 
-    public StudentRepositoryEs()
+    public StudentRepositoryEs(IConfiguration configuration)
     {
+        _options = configuration.GetSection("ElasticSearch")?.Get<ElasticSearchOptions>() ?? throw new ArgumentNullException("ElasticSearch");
+        _elasticClientSettings = new ConnectionSettings(new Uri(_options.Url))
+                    .DefaultIndex(_options.StudentIndex);
     }
 
     public async Task SyncData(Student entity)
     {
-        var settings = new ConnectionSettings(new Uri(EsConstants.BaseUrlEs))
-            .DefaultIndex(EsConstants.IndexStudent);
+        var client = new ElasticClient(_elasticClientSettings);
 
-        var client = new ElasticClient(settings);
-
-        client.Indices.Create(EsConstants.IndexStudent, c => c
-            .Map<Student>(m => m.AutoMap())
-        );
+        await client.Indices.CreateAsync(_options.StudentIndex, c => c
+              .Map<Student>(m => m.AutoMap())
+          );
 
         var indexResponse = client.IndexDocument(entity);
     }
 
     public async Task UpdateSyncData(Student entity)
     {
-        var settings = new ConnectionSettings(new Uri(EsConstants.BaseUrlEs))
-            .DefaultIndex(EsConstants.IndexStudent);
-
-        var client = new ElasticClient(settings);
+        var client = new ElasticClient(_elasticClientSettings);
 
         // Update the document with the specified ID
         await client.UpdateAsync<Student>(entity.Id, u => u
@@ -42,14 +37,11 @@ public class StudentRepositoryEs : IStudentRepositoryEs
 
     public async Task DeleteData(string id)
     {
-        var settings = new ConnectionSettings(new Uri(EsConstants.BaseUrlEs))
-            .DefaultIndex(EsConstants.IndexStudent);
-
-        var client = new ElasticClient(settings);
+        var client = new ElasticClient(_elasticClientSettings);
 
         try
         {
-        var s=     await client.DeleteAsync<Student>(id);
+            var s = await client.DeleteAsync<Student>(id);
         }
         catch (Exception e)
         {
