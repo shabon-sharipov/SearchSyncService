@@ -12,7 +12,7 @@ public class StudentEventEsSyncConsumer : IStudentEventEsSyncConsumer
     public StudentEventEsSyncConsumer(IStudentSyncService studentSync, IConfiguration configuration)
     {
         _studentSync = studentSync;
-        _options = configuration.GetSection("RabbitMQ")?.Get<RabbitMQOptions>() ?? throw new ArgumentNullException("ElasticSearchOptions");
+        _options = configuration.GetSection("RabbitMQ")?.Get<RabbitMQOptions>() ?? throw new ArgumentNullException("RabbitMQ");
     }
 
     public async Task Consume()
@@ -22,7 +22,6 @@ public class StudentEventEsSyncConsumer : IStudentEventEsSyncConsumer
             Uri = new Uri(_options.Url),
             ClientProvidedName = _options.ClientProvidedName
         };
-        await Console.Out.WriteLineAsync(_options.Url);
         using (var connection = factory.CreateConnection())
         using (var channel = connection.CreateModel())
         {
